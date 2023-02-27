@@ -3,11 +3,10 @@ import os
 import time
 from random import randint
 from math import sin
-from time import sleep
 
 FPS = 60
 WIDTH, HEIGHT = 450, 700
-PRZERWA = 250
+PRZERWA = 300
 SCORE = 0
 WHITE = (255, 255, 255)
 
@@ -204,8 +203,6 @@ def main():
     textY = HEIGHT / 4
     loadingScreen = True
     
-    # bez tego na koniec overscreen jak klikniesz spacje to od razu zaczna skakać
-    sleep(.1)
     while loadingScreen:
         clock.tick(FPS)
         
@@ -237,7 +234,7 @@ def main():
     
     pipes = []
     for i in range(2):
-        pipes.append(Pipe(WIDTH + i * (WIDTH / 2), randint(PRZERWA + 100, HEIGHT - 100)))
+        pipes.append(Pipe(WIDTH + i * (WIDTH / 2 + 50), randint(PRZERWA + 100, HEIGHT - 100)))
     
     gameRunning = True
     while gameRunning:
@@ -264,7 +261,7 @@ def main():
                 event = pygame.event.wait()
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                elif event.type == pygame.KEYDOWN:
+                elif event.type == pygame.KEYUP:
                     main()
 
 
