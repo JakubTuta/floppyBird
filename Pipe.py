@@ -18,6 +18,7 @@ class Pipe:
         self.y2 = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
         self.mask = pygame.mask.from_surface(self.__pipe_up)
         self.mask2 = pygame.mask.from_surface(self.__pipe_down)
+        self.hasScored = False
     
     def draw(self):
         Pipe.WIN.blit(self.__pipe_up, (self.x, self.y))
@@ -33,6 +34,10 @@ class Pipe:
         self.x = Pipe.settings["WIDTH"]
         self.y = y
         self.y2 = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
+        self.hasScored = False
     
     def moveLeft(self):
         self.x -= 4
+    
+    def checkPoints(self, bird):
+        return abs(bird.getMidPoint() - self.getMidPoint()) < 4 and not self.hasScored

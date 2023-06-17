@@ -45,9 +45,9 @@ class Bird:
         self.__timeOfJump = time.time()
     
     def __checkIfJumpedGood(self):
-        if time.time() - self.__timeOfJump < .15:
+        if time.time() - self.__timeOfJump < .2:
             return 0
-        elif time.time() - self.__timeOfJump == .15:
+        elif time.time() - self.__timeOfJump == .2:
             return 1
         else:
             return 2

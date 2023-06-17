@@ -6,8 +6,10 @@ from BackGround import Bg
 from Pipe import Pipe
 from Bird import Bird
 
+
 SCORE = 0
 WHITE = (255, 255, 255)
+
 
 def loadSettings():
     with open("settings.json") as file:
@@ -60,7 +62,8 @@ def checkCollisions(bird, pipes):
 
 def checkPoints(bird, pipes):
     for pipe in pipes: 
-        if abs(bird.getMidPoint() - pipe.getMidPoint()) < 3:
+        if pipe.checkPoints(bird):
+            pipe.hasScored = True
             global SCORE
             SCORE += 1
 
@@ -155,24 +158,23 @@ def main():
                 if event.key == pygame.K_SPACE and spacePressed:
                     spacePressed = False
         
-        
         move(bg, bird, pipes)
         checkPoints(bird, pipes)
         draw(bg, bird, pipes)
         printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
+        pygame.display.update()
         
         if checkIfOutOfScreen(settings, bg, bird, pipes) == 1 or checkCollisions(bird, pipes) == 1:
             while True:
                 gameoverScreen(WIN, settings, fonts, bg, bird, pipes)
-                global SCORE
-                SCORE = 0
                 event = pygame.event.wait()
                 if event.type == pygame.QUIT:
                     pygame.quit()
                 elif event.type == pygame.KEYUP:
+                    global SCORE
+                    SCORE = 0
                     main()
         
-        pygame.display.update()
         clock.tick(settings["FPS"])
 
 
