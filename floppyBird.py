@@ -1,122 +1,18 @@
 import pygame
-import os
-import time
 from random import randint
 from math import sin
+import json
+from BackGround import Bg
+from Pipe import Pipe
+from Bird import Bird
 
-FPS = 60
-WIDTH, HEIGHT = 450, 700
-PRZERWA = 300
 SCORE = 0
 WHITE = (255, 255, 255)
 
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("FLOPPY BIRD")
-
-pygame.init()
-fontPoints = pygame.font.Font("fonts/ARCADECLASSIC.ttf", 80)
-fontText = pygame.font.Font("fonts/ARCADECLASSIC.ttf", 35)
-fontTextBiggest = pygame.font.Font("fonts/ARCADECLASSIC.ttf", 70)
-
-class Bg:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.__background = pygame.Surface.convert(pygame.transform.scale(pygame.image.load(os.path.join("assets/background.png")), (WIDTH * 3, HEIGHT)))
-    
-    def draw(self):
-        WIN.blit(self.__background, (self.x, self.y))
-    
-    def moveLeft(self):
-        self.x -= 1
-    
-    def checkIfOutOfScreen(self):
-        return self.x <= -WIDTH * 2
-    
-    def restart(self):
-        self.x = 0
-
-
-class Bird:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.__timeOfJump = 0
-        self.__speed = 0
-        self.__floppyBird = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/floppy_bird.png")), (80, 60)))
-        self.__floppyBird_goingup = pygame.Surface.convert_alpha(pygame.transform.rotate(self.__floppyBird, 30))
-        self.__floppyBird_goingdown = pygame.Surface.convert_alpha(pygame.transform.rotate(self.__floppyBird, -45))
-        self.mask = pygame.mask.from_surface(self.__floppyBird)
-        
-    def draw(self):
-        if self.__speed > 0:
-            self.__floppyBird = self.__floppyBird_goingdown
-        elif self.__speed < 0:
-            self.__floppyBird = self.__floppyBird_goingup
-        
-        self.mask = pygame.mask.from_surface(self.__floppyBird)
-        WIN.blit(self.__floppyBird, (self.x, self.y))
-        
-    def move(self):
-        zwrocone = self.__checkIfJumpedGood()
-        
-        # w góre
-        if zwrocone == 0:
-            self.__speed = -10 + 50 * abs(self.__timeOfJump - time.time())
-        # na szczycie
-        elif zwrocone == 1:
-            self.__timeOfJump = time.time()
-        # w dół
-        elif zwrocone == 2:
-            self.__speed = 10 + 10 * abs(self.__timeOfJump - time.time())
-        
-        self.y += self.__speed
-    
-    def jump(self):
-        self.__timeOfJump = time.time()
-    
-    def __checkIfJumpedGood(self):
-        if time.time() - self.__timeOfJump < .15:
-            return 0
-        elif time.time() - self.__timeOfJump == .15:
-            return 1
-        else:
-            return 2
-    
-    def getHeight(self):
-        return self.__floppyBird.get_height()
-    
-    def getMidPoint(self):
-        return self.x + self.__floppyBird.get_width() / 2
-
-
-class Pipe:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.__pipe_up = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/pipe.png")), (75, HEIGHT * .6))) 
-        self.__pipe_down = pygame.Surface.convert_alpha(pygame.transform.flip(self.__pipe_up, False, True))
-        self.y2 = y - PRZERWA - self.__pipe_down.get_height()
-        self.mask = pygame.mask.from_surface(self.__pipe_up)
-        self.mask2 = pygame.mask.from_surface(self.__pipe_down)
-    
-    def draw(self):
-        WIN.blit(self.__pipe_up, (self.x, self.y))
-        WIN.blit(self.__pipe_down, (self.x, self.y - PRZERWA - self.__pipe_down.get_height()))
-    
-    def getMidPoint(self):
-        return self.x + self.__pipe_up.get_width() / 2
-    
-    def checkIfOutOfScreen(self):
-        return self.x + self.__pipe_up.get_width() < 0
-    
-    def restart(self, y):
-        self.x = WIDTH
-        self.y = y
-        self.y2 = y - PRZERWA - self.__pipe_down.get_height()
-    
-    def moveLeft(self):
-        self.x -= 4
+def loadSettings():
+    with open("settings.json") as file:
+        settings = json.load(file)
+    return settings
 
 
 def collide(obj1, obj2):
@@ -145,67 +41,74 @@ def move(bg, bird, pipes):
         pipe.moveLeft()
 
 
-def checkIfOutOfScreen(bg, bird, pipes):
+def checkIfOutOfScreen(settings, bg, bird, pipes):
     if bg.checkIfOutOfScreen():
         bg.restart()
         
     for pipe in pipes:
         if pipe.checkIfOutOfScreen():
-            pipe.restart(randint(PRZERWA + 100, HEIGHT - 100))
+            pipe.restart(randint(settings["PRZERWA"] + 100, settings["HEIGHT"] - 100))
     
-    if bird.y + bird.getHeight() < 0:
-        return 1
-    elif bird.y > HEIGHT:
-        return 1
+    return bird.y + bird.getHeight() < 0 or bird.y > settings["HEIGHT"]
 
 
-def check_collisions(bird, pipes):
+def checkCollisions(bird, pipes):
     for pipe in pipes:
         if collide(bird, pipe) or collide2(bird, pipe):
             return 1
 
 
-def check_points(bird, pipes):
+def checkPoints(bird, pipes):
     for pipe in pipes: 
         if abs(bird.getMidPoint() - pipe.getMidPoint()) < 3:
             global SCORE
             SCORE += 1
 
 
-def print_points():
+def printPoints(WIN, fontPoints, WIDTH):
     textWidth = fontPoints.size(f'{SCORE}')[0]
     WIN.blit(fontPoints.render(f'{SCORE}', True, WHITE), (WIDTH / 2 - textWidth / 2, 10))
 
 
-def gameover_screen(bg, bird, pipes):
+def gameoverScreen(WIN, settings, fonts, bg, bird, pipes):
     draw(bg, bird, pipes)
-    print_points()
+    printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
     
-    textY = HEIGHT // 4
-    text1 = fontTextBiggest.render(f"You  lost!", True, WHITE)
-    text1Width, text1Height = fontTextBiggest.size(f"You  lost!")
-    text2 = fontText.render(f"Press  any  key  to  continue", True, WHITE)
-    text2Width = fontText.size(f"Press  any  key  to  continue")[0]
+    textY = settings["HEIGHT"] // 4
+    text1 = fonts["fontTextBiggest"].render("You  lost!", True, WHITE)
+    text1Width, text1Height = fonts["fontTextBiggest"].size("You  lost!")
     
-    WIN.blit(text1, (WIDTH / 2 - text1Width / 2, textY))
-    WIN.blit(text2, (WIDTH / 2 - text2Width / 2, textY + text1Height + 20))
+    text2 = fonts["fontText"].render("Press  any  key  to  continue", True, WHITE)
+    text2Width = fonts["fontText"].size("Press  any  key  to  continue")[0]
+    
+    WIN.blit(text1, (settings["WIDTH"] / 2 - text1Width / 2, textY))
+    WIN.blit(text2, (settings["WIDTH"] / 2 - text2Width / 2, textY + text1Height + 20))
     
     pygame.display.update()
 
 
 def main():
-    clock = pygame.time.Clock()
+    settings = loadSettings()
     
-    bg = Bg(0, 0)
-    bird = Bird(WIDTH / 4, HEIGHT / 2)
+    WIN = pygame.display.set_mode((settings["WIDTH"], settings["HEIGHT"]))
+    pygame.display.set_caption("FLOPPY BIRD")
+
+    pygame.init()
+    fonts = {
+        "fontPoints": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 80),
+        "fontText": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 35),
+        "fontTextBiggest": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 70)
+    }
+    
+    bg = Bg(WIN, 0, 0)
+    bird = Bird(WIN, settings["WIDTH"] / 4, settings["HEIGHT"] / 2)
     
     wartoscSin = 0
-    textY = HEIGHT / 4
+    textY = settings["HEIGHT"] / 4
     loadingScreen = True
     
+    clock = pygame.time.Clock()
     while loadingScreen:
-        clock.tick(FPS)
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -222,40 +125,45 @@ def main():
         textY -= sin(wartoscSin)
         wartoscSin += .1
         
-        text1 = fontText.render(f"Welcome  to  flappy  bird!", True, WHITE)
-        text1Width, text1Height = fontText.size(f"Welcome  to  flappy  bird!")
-        text2 = fontText.render(f"Press  space  to  start", True, WHITE)
-        text2Width = fontText.size(f"Press  space  to  start")[0]
+        text1 = fonts["fontText"].render(f"Welcome  to  flappy  bird!", True, WHITE)
+        text1Width, text1Height = fonts["fontText"].size(f"Welcome  to  flappy  bird!")
+        text2 = fonts["fontText"].render(f"Press  space  to  start", True, WHITE)
+        text2Width = fonts["fontText"].size(f"Press  space  to  start")[0]
         
-        WIN.blit(text1, (WIDTH / 2 - text1Width / 2, textY))
-        WIN.blit(text2, (WIDTH / 2 - text2Width / 2, textY + text1Height + 20))
+        WIN.blit(text1, (settings["WIDTH"] / 2 - text1Width / 2, textY))
+        WIN.blit(text2, (settings["WIDTH"] / 2 - text2Width / 2, textY + text1Height + 20))
         
         pygame.display.update()
+        clock.tick(settings["FPS"])
     
     pipes = []
     for i in range(2):
-        pipes.append(Pipe(WIDTH + i * (WIDTH / 2 + 50), randint(PRZERWA + 100, HEIGHT - 100)))
+        pipes.append(Pipe(WIN, settings["WIDTH"] + i * (settings["WIDTH"] / 2 + 50), randint(settings["PRZERWA"] + 100, settings["HEIGHT"] - 100)))
     
     gameRunning = True
+    spacePressed = False
+    
     while gameRunning:
-        clock.tick(FPS)
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and not spacePressed:
+                    spacePressed = True
+                    bird.jump()
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_SPACE and spacePressed:
+                    spacePressed = False
         
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE]:
-            bird.jump()
         
         move(bg, bird, pipes)
-        check_points(bird, pipes)
+        checkPoints(bird, pipes)
         draw(bg, bird, pipes)
-        print_points()
-        pygame.display.update()
-        if checkIfOutOfScreen(bg, bird, pipes) == 1 or check_collisions(bird, pipes) == 1:
+        printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
+        
+        if checkIfOutOfScreen(settings, bg, bird, pipes) == 1 or checkCollisions(bird, pipes) == 1:
             while True:
-                gameover_screen(bg, bird, pipes)
+                gameoverScreen(WIN, settings, fonts, bg, bird, pipes)
                 global SCORE
                 SCORE = 0
                 event = pygame.event.wait()
@@ -263,6 +171,9 @@ def main():
                     pygame.quit()
                 elif event.type == pygame.KEYUP:
                     main()
+        
+        pygame.display.update()
+        clock.tick(settings["FPS"])
 
 
 if __name__ == "__main__":
