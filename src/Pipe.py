@@ -12,17 +12,17 @@ class Pipe:
             Pipe.settings = json.load(file)
         
         self.x = x
-        self.y = y
-        self.__pipe_up = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/pipe.png")), (75, Pipe.settings["HEIGHT"] * .6))) 
+        self.bottomY = y
+        self.__pipe_up = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/pipe.png")), (75, Pipe.settings["HEIGHT"] * .6)))
         self.__pipe_down = pygame.Surface.convert_alpha(pygame.transform.flip(self.__pipe_up, False, True))
-        self.y2 = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
+        self.topY = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
         self.mask = pygame.mask.from_surface(self.__pipe_up)
         self.mask2 = pygame.mask.from_surface(self.__pipe_down)
         self.hasScored = False
     
     def draw(self):
-        Pipe.WIN.blit(self.__pipe_up, (self.x, self.y))
-        Pipe.WIN.blit(self.__pipe_down, (self.x, self.y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()))
+        Pipe.WIN.blit(self.__pipe_up, (self.x, self.bottomY))
+        Pipe.WIN.blit(self.__pipe_down, (self.x, self.bottomY - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()))
     
     def getMidPoint(self):
         return self.x + self.__pipe_up.get_width() / 2
@@ -32,8 +32,8 @@ class Pipe:
     
     def restart(self, y):
         self.x = Pipe.settings["WIDTH"]
-        self.y = y
-        self.y2 = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
+        self.bottomY = y
+        self.topY = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
         self.hasScored = False
     
     def moveLeft(self):
@@ -41,3 +41,9 @@ class Pipe:
     
     def checkPoints(self, bird):
         return abs(bird.getMidPoint() - self.getMidPoint()) < 4 and not self.hasScored
+    
+    def getTopPipeY(self):
+        return self.topY + self.__pipe_up.get_height()
+    
+    def getBottomPipeY(self):
+        return self.bottomY

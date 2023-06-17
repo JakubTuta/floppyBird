@@ -17,16 +17,16 @@ def loadSettings():
     return settings
 
 
-def collide(obj1, obj2):
-    offset_x = obj2.x - obj1.x
-    offset_y = obj2.y - obj1.y
-    return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
+def collide(bird, pipe):
+    offset_x = pipe.x - bird.x
+    offset_y = pipe.bottomY - bird.y
+    return bird.mask.overlap(pipe.mask, (offset_x, offset_y)) != None
 
 
-def collide2(obj1, obj2):
-    offset_x = obj2.x - obj1.x
-    offset_y = obj2.y2 - obj1.y
-    return obj1.mask.overlap(obj2.mask2, (offset_x, offset_y)) != None
+def collide2(bird, pipe):
+    offset_x = pipe.x - bird.x
+    offset_y = pipe.topY - bird.y
+    return bird.mask.overlap(pipe.mask2, (offset_x, offset_y)) != None
 
 
 def draw(bg, bird, pipes):
