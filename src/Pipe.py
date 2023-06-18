@@ -1,6 +1,7 @@
 import pygame
 import json
 import os
+import random
 
 class Pipe:
     settings = {}
@@ -13,27 +14,30 @@ class Pipe:
         
         self.x = x
         self.bottomY = y
-        self.__pipe_up = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/pipe.png")), (75, Pipe.settings["HEIGHT"] * .6)))
+        self.__pipe_up = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/pipe.png")), (70, Pipe.settings["HEIGHT"] * .7)))
         self.__pipe_down = pygame.Surface.convert_alpha(pygame.transform.flip(self.__pipe_up, False, True))
-        self.topY = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
+        self.topY = y - Pipe.settings["PRZERWA_Y"] - self.__pipe_down.get_height()
         self.mask = pygame.mask.from_surface(self.__pipe_up)
         self.mask2 = pygame.mask.from_surface(self.__pipe_down)
         self.hasScored = False
     
     def draw(self):
         Pipe.WIN.blit(self.__pipe_up, (self.x, self.bottomY))
-        Pipe.WIN.blit(self.__pipe_down, (self.x, self.bottomY - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()))
+        Pipe.WIN.blit(self.__pipe_down, (self.x, self.bottomY - Pipe.settings["PRZERWA_Y"] - self.__pipe_down.get_height()))
     
     def getMidPoint(self):
         return self.x + self.__pipe_up.get_width() / 2
     
+    def getWidth(self):
+        return self.__pipe_up.get_width()
+    
     def checkIfOutOfScreen(self):
         return self.x + self.__pipe_up.get_width() < 0
     
-    def restart(self, y):
+    def restart(self):
         self.x = Pipe.settings["WIDTH"]
-        self.bottomY = y
-        self.topY = y - Pipe.settings["PRZERWA"] - self.__pipe_down.get_height()
+        self.bottomY = random.randint(Pipe.settings["PRZERWA_Y"] + Pipe.settings["HEIGHT"] * .15, Pipe.settings["HEIGHT"] * .85)
+        self.topY = self.bottomY - Pipe.settings["PRZERWA_Y"] - self.__pipe_down.get_height()
         self.hasScored = False
     
     def moveLeft(self):

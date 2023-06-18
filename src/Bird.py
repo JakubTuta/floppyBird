@@ -1,20 +1,19 @@
 import pygame
 import time
-import os
 
 class Bird:
     WIN = None
     
-    def __init__(self, WIN, x, y):
+    def __init__(self, WIN, x, y, graphics):
         Bird.WIN = WIN
         
         self.x = x
         self.y = y
-        self.__timeOfJump = 0
+        self.__timeOfJump = time.time()
         self.__speed = 0
-        self.__floppyBird = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/floppy_bird.png")), (80, 60)))
-        self.__floppyBird_goingup = pygame.Surface.convert_alpha(pygame.transform.rotate(self.__floppyBird, 30))
-        self.__floppyBird_goingdown = pygame.Surface.convert_alpha(pygame.transform.rotate(self.__floppyBird, -45))
+        self.__floppyBird = graphics[0]
+        self.__floppyBird_goingup = graphics[1]
+        self.__floppyBird_goingdown = graphics[2]
         self.mask = pygame.mask.from_surface(self.__floppyBird)
         
     def draw(self):
@@ -54,6 +53,9 @@ class Bird:
     
     def getHeight(self):
         return self.__floppyBird.get_height()
+    
+    def getWidth(self):
+        return self.__floppyBird.get_width()
     
     def getMidPoint(self):
         return self.x + self.__floppyBird.get_width() / 2

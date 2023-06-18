@@ -1,20 +1,32 @@
-import pygame
+import pygame                   # pip install pygame / pip install pygame --pre
+import neat                     # pip install neat-python
 from random import randint
-from math import sin
 import json
+import os
 from BackGround import Bg
 from Pipe import Pipe
 from Bird import Bird
 
-
-SCORE = 0
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+SCORE = 0
+GEN = 0
 
+with open("settings.json") as file:
+    settings = json.load(file)
 
-def loadSettings():
-    with open("settings.json") as file:
-        settings = json.load(file)
-    return settings
+WIN = pygame.display.set_mode((settings["WIDTH"], settings["HEIGHT"]))
+pygame.display.set_caption("FLOPPY BIRD")
+
+clock = pygame.time.Clock()
+
+pygame.init()
+font = pygame.font.SysFont(None, 40)
+
+baseBirdGraphic = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/floppy_bird.png")), (50, 30)))
+birdGraphics = [baseBirdGraphic,
+                pygame.Surface.convert_alpha(pygame.transform.rotate(baseBirdGraphic, 30)),
+                pygame.Surface.convert_alpha(pygame.transform.rotate(baseBirdGraphic, -45))]
 
 
 def collide(bird, pipe):
@@ -29,16 +41,18 @@ def collide2(bird, pipe):
     return bird.mask.overlap(pipe.mask2, (offset_x, offset_y)) != None
 
 
-def draw(bg, bird, pipes):
+def draw(bg, birds, pipes):
     bg.draw()
-    bird.draw()
+    
+    for bird in birds:
+        bird.draw()
+    
     for pipe in pipes:
         pipe.draw()
 
 
-def move(bg, bird, pipes):
+def move(bg, pipes):
     bg.moveLeft()
-    bird.move()
     for pipe in pipes:
         pipe.moveLeft()
 
@@ -46,138 +60,124 @@ def move(bg, bird, pipes):
 def checkIfOutOfScreen(settings, bg, bird, pipes):
     if bg.checkIfOutOfScreen():
         bg.restart()
-        
-    for pipe in pipes:
+    
+    for i, pipe in enumerate(pipes):
         if pipe.checkIfOutOfScreen():
-            pipe.restart(randint(settings["PRZERWA"] + 100, settings["HEIGHT"] - 100))
+            pipe.restart()
+            pipes.pop(i)
+            pipes.append(pipe)
     
     return bird.y + bird.getHeight() < 0 or bird.y > settings["HEIGHT"]
-
-
-def checkCollisions(bird, pipes):
-    for pipe in pipes:
-        if collide(bird, pipe) or collide2(bird, pipe):
-            return 1
 
 
 def checkPoints(bird, pipes):
     for pipe in pipes: 
         if pipe.checkPoints(bird):
             pipe.hasScored = True
-            global SCORE
-            SCORE += 1
+            return True
+    return False
 
 
-def printPoints(WIN, fontPoints, WIDTH):
-    textWidth = fontPoints.size(f'{SCORE}')[0]
-    WIN.blit(fontPoints.render(f'{SCORE}', True, WHITE), (WIDTH / 2 - textWidth / 2, 10))
+def checkCollisions(bird, pipes):
+    for pipe in pipes:
+        if collide(bird, pipe) or collide2(bird, pipe):
+            return True
+    return False
 
 
-def gameoverScreen(WIN, settings, fonts, bg, bird, pipes):
-    draw(bg, bird, pipes)
-    printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
+def drawLine(WIN, bird, pipe):
+    pygame.draw.line(WIN, RED, (bird.x + (bird.getWidth() / 2), bird.y + (bird.getHeight() / 2)), (pipe.x + (pipe.getWidth() / 2), pipe.getTopPipeY()), width=5)
+    pygame.draw.line(WIN, RED, (bird.x + (bird.getWidth() / 2), bird.y + (bird.getHeight() / 2)), (pipe.x + (pipe.getWidth() / 2), pipe.getBottomPipeY()), width=5)
+
+
+def run(config_file):
+    print(config_file)
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_file)
     
-    textY = settings["HEIGHT"] // 4
-    text1 = fonts["fontTextBiggest"].render("You  lost!", True, WHITE)
-    text1Width, text1Height = fonts["fontTextBiggest"].size("You  lost!")
+    population = neat.Population(config)
+    population.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    population.add_reporter(stats)
     
-    text2 = fonts["fontText"].render("Press  any  key  to  continue", True, WHITE)
-    text2Width = fonts["fontText"].size("Press  any  key  to  continue")[0]
-    
-    WIN.blit(text1, (settings["WIDTH"] / 2 - text1Width / 2, textY))
-    WIN.blit(text2, (settings["WIDTH"] / 2 - text2Width / 2, textY + text1Height + 20))
-    
-    pygame.display.update()
+    winner = population.run(main, 50)
 
 
-def main():
-    settings = loadSettings()
+def printText(WIN, birdsAlive):
+    textWidth = font.size(f"Score: {SCORE}")[0]
+    WIN.blit(font.render(f"Score: {SCORE}", True, WHITE), (settings["WIDTH"] - textWidth - 10, 10))
     
-    WIN = pygame.display.set_mode((settings["WIDTH"], settings["HEIGHT"]))
-    pygame.display.set_caption("FLOPPY BIRD")
+    textHeight = font.size(f"Generation: {GEN}")[1]
+    WIN.blit(font.render(f"Generation: {GEN}", True, WHITE), (10, 10))
+    WIN.blit(font.render(f"Birds: {birdsAlive}", True, WHITE), (10, 10 + textHeight + 10))
 
-    pygame.init()
-    fonts = {
-        "fontPoints": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 80),
-        "fontText": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 35),
-        "fontTextBiggest": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 70)
-    }
+
+def main(genomes, config):
+    global GEN
+    GEN += 1
     
     bg = Bg(WIN, 0, 0)
-    bird = Bird(WIN, settings["WIDTH"] / 4, settings["HEIGHT"] / 2)
     
-    wartoscSin = 0
-    textY = settings["HEIGHT"] / 4
-    loadingScreen = True
+    nets = []
+    ge = []
+    birds = []
     
-    clock = pygame.time.Clock()
-    while loadingScreen:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-        
-        keyz = pygame.key.get_pressed()
-        if keyz[pygame.K_SPACE]:
-            loadingScreen = False
-            bird.jump()
-        
-        bg.draw()
-        bg.moveLeft()
-        bird.draw()
-        
-        textY -= sin(wartoscSin)
-        wartoscSin += .1
-        
-        text1 = fonts["fontText"].render(f"Welcome  to  flappy  bird!", True, WHITE)
-        text1Width, text1Height = fonts["fontText"].size(f"Welcome  to  flappy  bird!")
-        text2 = fonts["fontText"].render(f"Press  space  to  start", True, WHITE)
-        text2Width = fonts["fontText"].size(f"Press  space  to  start")[0]
-        
-        WIN.blit(text1, (settings["WIDTH"] / 2 - text1Width / 2, textY))
-        WIN.blit(text2, (settings["WIDTH"] / 2 - text2Width / 2, textY + text1Height + 20))
-        
-        pygame.display.update()
-        clock.tick(settings["FPS"])
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        g.fitness = 0
+        ge.append(g)
+        birds.append(Bird(WIN, settings["WIDTH"] / 4, settings["HEIGHT"] / 2, birdGraphics))
     
     pipes = []
     for i in range(2):
-        pipes.append(Pipe(WIN, settings["WIDTH"] + i * (settings["WIDTH"] / 2 + 50), randint(settings["PRZERWA"] + 100, settings["HEIGHT"] - 100)))
+        pipes.append(Pipe(WIN, settings["WIDTH"] + settings["PRZERWA_X"] * i, randint(settings["PRZERWA_Y"] + settings["HEIGHT"] * .15, settings["HEIGHT"] * .85)))
     
-    gameRunning = True
-    spacePressed = False
-    
-    while gameRunning:
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE and not spacePressed:
-                    spacePressed = True
-                    bird.jump()
-            elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_SPACE and spacePressed:
-                    spacePressed = False
         
-        move(bg, bird, pipes)
-        checkPoints(bird, pipes)
-        draw(bg, bird, pipes)
-        printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
+        if len(birds) == 0:
+            global SCORE
+            SCORE = 0
+            break
+        
+        move(bg, pipes)
+        draw(bg, birds, pipes)
+        printText(WIN, len(birds))
+        
+        pipeIndex = 0
+        if birds[0].x > pipes[0].x + pipes[0].getWidth():
+            pipeIndex = 1
+        
+        for i, bird in enumerate(birds):
+            bird.move()
+            ge[i].fitness += .1
+            
+            output = nets[i].activate((bird.y, abs(bird.y - pipes[pipeIndex].getTopPipeY()), abs(bird.y - pipes[pipeIndex].getBottomPipeY())))
+            if output[0] > .5:
+                bird.jump()
+            
+            drawLine(WIN, bird, pipes[pipeIndex])
+        
+        for i, bird in enumerate(birds):
+            if checkIfOutOfScreen(settings, bg, bird, pipes) == 1 or checkCollisions(bird, pipes):
+                ge[i].fitness -= 1
+                birds.pop(i)
+                nets.pop(i)
+                ge.pop(i)
+        
+        if len(birds) > 0:
+            if checkPoints(birds[0], pipes):
+                SCORE += 1
+                for g in ge:
+                    g.fitness += 5
+        
         pygame.display.update()
-        
-        if checkIfOutOfScreen(settings, bg, bird, pipes) == 1 or checkCollisions(bird, pipes) == 1:
-            while True:
-                gameoverScreen(WIN, settings, fonts, bg, bird, pipes)
-                event = pygame.event.wait()
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                elif event.type == pygame.KEYUP:
-                    global SCORE
-                    SCORE = 0
-                    main()
-        
         clock.tick(settings["FPS"])
 
 
 if __name__ == "__main__":
-    main()
-    pygame.quit()
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, "../NEAT_config.txt")
+    run(config_path)
