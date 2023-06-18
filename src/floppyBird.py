@@ -10,11 +10,19 @@ from Bird import Bird
 SCORE = 0
 WHITE = (255, 255, 255)
 
+with open("settings.json") as file:
+    settings = json.load(file)
 
-def loadSettings():
-    with open("settings.json") as file:
-        settings = json.load(file)
-    return settings
+WIN = pygame.display.set_mode((settings["WIDTH"], settings["HEIGHT"]))
+pygame.display.set_caption("FLOPPY BIRD")
+clock = pygame.time.Clock()
+
+pygame.init()
+fonts = {
+    "fontPoints": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 80),
+    "fontText": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 35),
+    "fontTextBiggest": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 70)
+}
 
 
 def collide(bird, pipe):
@@ -43,13 +51,13 @@ def move(bg, bird, pipes):
         pipe.moveLeft()
 
 
-def checkIfOutOfScreen(settings, bg, bird, pipes):
+def checkIfOutOfScreen(bg, bird, pipes):
     if bg.checkIfOutOfScreen():
         bg.restart()
-        
+    
     for pipe in pipes:
         if pipe.checkIfOutOfScreen():
-            pipe.restart(randint(settings["PRZERWA"] + 100, settings["HEIGHT"] - 100))
+            pipe.restart()
     
     return bird.y + bird.getHeight() < 0 or bird.y > settings["HEIGHT"]
 
@@ -57,7 +65,8 @@ def checkIfOutOfScreen(settings, bg, bird, pipes):
 def checkCollisions(bird, pipes):
     for pipe in pipes:
         if collide(bird, pipe) or collide2(bird, pipe):
-            return 1
+            return True
+    return False
 
 
 def checkPoints(bird, pipes):
@@ -68,14 +77,14 @@ def checkPoints(bird, pipes):
             SCORE += 1
 
 
-def printPoints(WIN, fontPoints, WIDTH):
-    textWidth = fontPoints.size(f'{SCORE}')[0]
-    WIN.blit(fontPoints.render(f'{SCORE}', True, WHITE), (WIDTH / 2 - textWidth / 2, 10))
+def printPoints():
+    textWidth = fonts["fontPoints"].size(f'{SCORE}')[0]
+    WIN.blit(fonts["fontPoints"].render(f'{SCORE}', True, WHITE), (settings["WIDTH"] / 2 - textWidth / 2, 10))
 
 
-def gameoverScreen(WIN, settings, fonts, bg, bird, pipes):
+def gameoverScreen(bg, bird, pipes):
     draw(bg, bird, pipes)
-    printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
+    printPoints()
     
     textY = settings["HEIGHT"] // 4
     text1 = fonts["fontTextBiggest"].render("You  lost!", True, WHITE)
@@ -91,18 +100,6 @@ def gameoverScreen(WIN, settings, fonts, bg, bird, pipes):
 
 
 def main():
-    settings = loadSettings()
-    
-    WIN = pygame.display.set_mode((settings["WIDTH"], settings["HEIGHT"]))
-    pygame.display.set_caption("FLOPPY BIRD")
-
-    pygame.init()
-    fonts = {
-        "fontPoints": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 80),
-        "fontText": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 35),
-        "fontTextBiggest": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 70)
-    }
-    
     bg = Bg(WIN, 0, 0)
     bird = Bird(WIN, settings["WIDTH"] / 4, settings["HEIGHT"] / 2)
     
@@ -110,7 +107,6 @@ def main():
     textY = settings["HEIGHT"] / 4
     loadingScreen = True
     
-    clock = pygame.time.Clock()
     while loadingScreen:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -141,7 +137,7 @@ def main():
     
     pipes = []
     for i in range(2):
-        pipes.append(Pipe(WIN, settings["WIDTH"] + i * (settings["WIDTH"] / 2 + 50), randint(settings["PRZERWA"] + 100, settings["HEIGHT"] - 100)))
+        pipes.append(Pipe(WIN, settings["WIDTH"] + settings["PRZERWA_X"] * i, randint(settings["PRZERWA_Y"] + settings["HEIGHT"] * .15, settings["HEIGHT"] * .85)))
     
     gameRunning = True
     spacePressed = False
@@ -159,14 +155,13 @@ def main():
                     spacePressed = False
         
         move(bg, bird, pipes)
-        checkPoints(bird, pipes)
         draw(bg, bird, pipes)
-        printPoints(WIN, fonts["fontPoints"], settings["WIDTH"])
-        pygame.display.update()
+        checkPoints(bird, pipes)
+        printPoints()
         
-        if checkIfOutOfScreen(settings, bg, bird, pipes) == 1 or checkCollisions(bird, pipes) == 1:
+        if checkIfOutOfScreen(bg, bird, pipes) or checkCollisions(bird, pipes):
             while True:
-                gameoverScreen(WIN, settings, fonts, bg, bird, pipes)
+                gameoverScreen(bg, bird, pipes)
                 event = pygame.event.wait()
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -175,6 +170,7 @@ def main():
                     SCORE = 0
                     main()
         
+        pygame.display.update()
         clock.tick(settings["FPS"])
 
 

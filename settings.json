@@ -2,5 +2,6 @@
     "FPS": 60,
     "WIDTH": 450,
     "HEIGHT": 700,
-    "PRZERWA": 275
+    "PRZERWA_X": 265,
+    "PRZERWA_Y": 175
 }
