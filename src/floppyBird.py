@@ -90,18 +90,6 @@ def drawLine(WIN, bird, pipe):
     pygame.draw.line(WIN, RED, (bird.x + (bird.getWidth() / 2), bird.y + (bird.getHeight() / 2)), (pipe.x + (pipe.getWidth() / 2), pipe.getBottomPipeY()), width=5)
 
 
-def run(config_file):
-    print(config_file)
-    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_file)
-    
-    population = neat.Population(config)
-    population.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    population.add_reporter(stats)
-    
-    winner = population.run(main, 50)
-
-
 def printText(WIN, birdsAlive):
     textWidth = font.size(f"Score: {SCORE}")[0]
     WIN.blit(font.render(f"Score: {SCORE}", True, WHITE), (settings["WIDTH"] - textWidth - 10, 10))
@@ -109,6 +97,17 @@ def printText(WIN, birdsAlive):
     textHeight = font.size(f"Generation: {GEN}")[1]
     WIN.blit(font.render(f"Generation: {GEN}", True, WHITE), (10, 10))
     WIN.blit(font.render(f"Birds: {birdsAlive}", True, WHITE), (10, 10 + textHeight + 10))
+
+
+def run(config_file):
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_file)
+    
+    population = neat.Population(config)
+    population.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    population.add_reporter(stats)
+    
+    population.run(main, 50)
 
 
 def main(genomes, config):
@@ -158,10 +157,10 @@ def main(genomes, config):
             if output[0] > .5:
                 bird.jump()
             
-            drawLine(WIN, bird, pipes[pipeIndex])
+            # drawLine(WIN, bird, pipes[pipeIndex])
         
         for i, bird in enumerate(birds):
-            if checkIfOutOfScreen(settings, bg, bird, pipes) == 1 or checkCollisions(bird, pipes):
+            if checkIfOutOfScreen(settings, bg, bird, pipes) or checkCollisions(bird, pipes):
                 ge[i].fitness -= 1
                 birds.pop(i)
                 nets.pop(i)
