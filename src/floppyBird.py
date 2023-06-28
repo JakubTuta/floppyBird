@@ -19,7 +19,7 @@ clock = pygame.time.Clock()
 
 pygame.init()
 fonts = {
-    "fontPoints": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 80),
+    "fontPoints": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 90),
     "fontText": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 35),
     "fontTextBiggest": pygame.font.Font("fonts/ARCADECLASSIC.ttf", 70)
 }
@@ -122,7 +122,7 @@ def main():
         bird.draw()
         
         textY -= sin(wartoscSin)
-        wartoscSin += .1
+        wartoscSin += .05
         
         text1 = fonts["fontText"].render(f"Welcome  to  flappy  bird!", True, WHITE)
         text1Width, text1Height = fonts["fontText"].size(f"Welcome  to  flappy  bird!")
