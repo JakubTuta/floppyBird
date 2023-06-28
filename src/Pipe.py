@@ -4,18 +4,19 @@ import os
 import random
 
 class Pipe:
-    settings = {}
+    with open("settings.json") as file:
+        settings = json.load(file)
     WIN = None
+    pipeGraphic = pygame.image.load(os.path.join("assets/pipe.png"))
+    pipeGraphic.set_colorkey((255, 255, 255))
     
     def __init__(self, WIN, x, y):
         Pipe.WIN = WIN
-        with open("settings.json") as file:
-            Pipe.settings = json.load(file)
         
         self.x = x
         self.bottomY = y
-        self.__pipe_up = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/pipe.png")), (70, Pipe.settings["HEIGHT"] * .7)))
-        self.__pipe_down = pygame.Surface.convert_alpha(pygame.transform.flip(self.__pipe_up, False, True))
+        self.__pipe_up = pygame.transform.scale(Pipe.pipeGraphic, (70, Pipe.settings["HEIGHT"] * .7)).convert_alpha()
+        self.__pipe_down = pygame.transform.flip(self.__pipe_up, False, True)
         self.topY = y - Pipe.settings["PRZERWA_Y"] - self.__pipe_down.get_height()
         self.mask = pygame.mask.from_surface(self.__pipe_up)
         self.mask2 = pygame.mask.from_surface(self.__pipe_down)

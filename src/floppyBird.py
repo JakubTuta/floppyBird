@@ -1,5 +1,5 @@
-import pygame                   # pip install pygame / pip install pygame --pre
-import neat                     # pip install neat-python
+import pygame                           # pip install pygame / pip install pygame --pre
+import neat                             # pip install neat-python
 from random import randint
 import json
 import os
@@ -23,10 +23,10 @@ clock = pygame.time.Clock()
 pygame.init()
 font = pygame.font.SysFont(None, 40)
 
-baseBirdGraphic = pygame.Surface.convert_alpha(pygame.transform.scale(pygame.image.load(os.path.join("assets/floppy_bird.png")), (50, 30)))
+baseBirdGraphic = pygame.transform.scale(pygame.image.load(os.path.join("assets/floppy_bird.png")), (50, 30)).convert_alpha()
 birdGraphics = [baseBirdGraphic,
-                pygame.Surface.convert_alpha(pygame.transform.rotate(baseBirdGraphic, 30)),
-                pygame.Surface.convert_alpha(pygame.transform.rotate(baseBirdGraphic, -45))]
+                pygame.transform.rotate(baseBirdGraphic, 30),
+                pygame.transform.rotate(baseBirdGraphic, -45)]
 
 
 def collide(bird, pipe):
